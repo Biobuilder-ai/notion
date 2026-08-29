@@ -2,7 +2,7 @@
 publish: true
 title: 生信学习手册
 created: 2026-08-28T04:15:49.504+01:00
-modified: 2026-08-29T03:10:05.982+01:00
+modified: 2026-08-29T03:28:50.993+01:00
 ---
 
 # 生信学习手册
@@ -26,13 +26,13 @@ modified: 2026-08-29T03:10:05.982+01:00
 
 ### 生信基础环境
 
-- 01 Ubuntu 安装与迁移
-- 02 Jupyter Notebook 使用
-- 03 Linux 常用命令
-- 04 git 常用命令
-- 05 git 连接 GitHub
-- 06 git 基本原理
-- 07 Miniconda 安装与用途
+- [01 Ubuntu 安装与迁移](01-ubuntu-install.md)
+- [02Minicoda安装和使用](02-Miniconda-install.md)
+- [03 Jupyter Notebook 使用](03-jupyter.md)
+- [04 Linux 常用命令](04-linux-commands.md)
+- [05 git 常用命令](05-git-commands.md)
+- [06 git 连接 GitHub](06-git-github-connect.md)
+- [07 git 基本原理（简洁版）](07-git-principle.md)
 
 ---
 
