@@ -2,7 +2,7 @@
 publish: true
 title: 生信学习手册
 created: 2026-08-28T04:15:49.504+01:00
-modified: 2026-08-29T03:37:33.383+01:00
+modified: 2026-08-29T03:44:32.805+01:00
 ---
 
 > 一份写给初学者的、免费开放的生信学习手册。
@@ -25,7 +25,7 @@ modified: 2026-08-29T03:37:33.383+01:00
 ### 生信基础环境
 
 - [01 Ubuntu 安装与迁移](01-ubuntu-install.md)
-- [02Minicoda安装和使用](02-Miniconda-install.md)
+- [02 Minicoda安装和使用](02-Miniconda-install.md)
 - [03 Jupyter Notebook 使用](03-jupyter.md)
 - [04 Linux 常用命令](04-linux-commands.md)
 - [05 git 常用命令](05-git-commands.md)
