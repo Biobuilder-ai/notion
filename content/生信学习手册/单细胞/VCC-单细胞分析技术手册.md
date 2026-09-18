@@ -1,7 +1,9 @@
 ---
 publish: true
+aliases:
+  - VCC
 created: 2026-09-04T07:12:51.298Z
-modified: 2026-09-04T07:56:05.021Z
+modified: 2026-09-06T20:25:25.859Z
 tags:
   - 单细胞
   - 基础指南
@@ -286,7 +288,7 @@ indptr:  [0, 1, 2, 3]        ← 每行从 data 的第几个位置开始
 | `n_genes_by_counts` | 检测到的基因数（检出了多少种不同基因） | 过低=细胞质量差 |
 | `pct_counts_mt` | 线粒体基因占比 | 过高=细胞破裂，胞质RNA流失 |
 
-### 4.3 代码：读入数据 + 计算 QC 指标
+### 4.3 代码：读入数据+绘图+ 计算 QC 指标
 
 ```python
 import scanpy as sc
@@ -303,12 +305,28 @@ adata.var['mt'] = adata.var_names.str.startswith('MT-').to_numpy(dtype=bool)
 sc.pp.calculate_qc_metrics(adata, qc_vars=['mt'], percent_top=None, log1p=False, inplace=True)
 print("preselect-shape:", adata.shape)
 adata.obs[['n_genes_by_counts', 'total_counts', 'pct_counts_mt']].describe()
+# 绘图
+import matplotlib.pyplot as plt, numpy as np, gc
+# 三个 QC 指标的形状
+sc.pl.violin(adata, ['n_genes_by_counts', 'total_counts', 'pct_counts_mt'],
+             jitter=0.4, multi_panel=True, show=True)
+# 关键纪律：每个阈值到底删掉多少细胞？删 0 个的阈值是假阈值
+q = adata.obs[['n_genes_by_counts', 'total_counts', 'pct_counts_mt']]
+print('n_genes_by_counts < 1000 :', int((q.n_genes_by_counts < 1000).sum()))
+print('total_counts     > 50000 :', int((q.total_counts    > 50000).sum()))
+print('pct_counts_mt   >= 10    :', int((q.pct_counts_mt  >=   10).sum()))
+print('total_counts 分位数 99/99.5/99.9:',
+      np.percentile(q.total_counts, [99, 99.5, 99.9]).round(0))
 ```
 
 **输出：**
 
 ```
 preselect-shape: (18400, 18533)
+n_genes_by_counts < 1000 : 0
+total_counts     > 50000 : 72
+pct_counts_mt   >= 10    : 0
+total_counts 分位数 99/99.5/99.9: [47490. 49336. 51650.]
 ```
 
 | | n\_genes\_by\_counts | total\_counts | pct\_counts\_mt |
@@ -321,7 +339,7 @@ preselect-shape: (18400, 18533)
 | 50% | 6147.0 | 20109.0 | 0.270 |
 | 75% | 6842.0 | 27234.5 | 0.451 |
 | max | 8453.0 | 52420.0 | 3.348 |
-
+![[Pasted image 20260906212431.png]]
 **如何读 describe()：**
 
 count/mean/std/min/25%/50%/75%/max 是分布的骨架：
@@ -439,3 +457,5 @@ filtered-gene-shape: (18328, 14751)
 
 6. `adata.layers['counts'] = adata.X.copy()`：在过滤完成、矩阵已经缩小之后再存原始 count 备份，这样后续归一化改写 X 时不丢失原始数据。
    这就是我们分析的起点。
+   https://www.desmos.com/calculator/bboqmy3ztu
+   ![[Pasted image 20260906212049.png|335]]
