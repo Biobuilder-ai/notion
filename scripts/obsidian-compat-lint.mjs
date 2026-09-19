@@ -127,7 +127,7 @@ for (const f of files) {
     }
 
     /* ④ 行首缩进（非结构性）→ 同步器按 Markdown 规范会丢掉，提示迁移 */
-    if (/^(\t| {2,})/.test(line) && !/^(\t| )*([-*+]|\d+[.)]|>|#|\||`)/.test(line)) {
+    if (/^(\t| {2,})/.test(line) && !/^(\t| )*([-*+](?=\s)|\d+[.)](?=\s)|>|#|\||`)/.test(line)) {
       problems.push({
         rel,
         lineNo,

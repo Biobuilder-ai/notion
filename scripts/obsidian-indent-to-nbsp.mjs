@@ -38,8 +38,9 @@ if (targets.length === 0) {
 
 const NBSP = "\u00A0"
 const splitLines = (t) => t.split(/\r\n|\r|\n/)
-/** 结构性行首：嵌套列表 / 引用 / 标题 / 表格 / 代码围栏 —— 不能动 */
-const STRUCTURAL = /^([-*+]|\d+[.)]|>|#|\||`|\[!)/
+/** 结构性行首：嵌套列表 / 引用 / 标题 / 表格 / 代码围栏 —— 不能动
+    注意：列表标记后面必须跟空白才算（`- x` 是列表，`**粗体**` 不是） */
+const STRUCTURAL = /^([-*+](?=\s)|\d+[.)](?=\s)|>|#|\||`|\[!)/
 
 function walk(p, out = []) {
   const st = fs.statSync(p)
