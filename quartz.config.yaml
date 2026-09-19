@@ -73,8 +73,8 @@ plugins:
     enabled: true
     order: 50
     layout:
-      position: right
-      priority: 30
+      position: left # ★ 大纲移到左侧（Obsidian Outline 面板观感）
+      priority: 40
   - source: "@quartz-community/crawl-links"
     enabled: true
     options:
@@ -147,8 +147,8 @@ plugins:
   - source: "@quartz-community/explorer"
     enabled: true
     layout:
-      position: left
-      priority: 50
+      position: right # ★ 文件树移到右侧（当"目录"用）
+      priority: 5
   - source: "@quartz-community/graph"
     enabled: true
     layout:
@@ -285,14 +285,18 @@ layout:
         right: []
     content: {}
     folder:
+      # 注意：exclude 匹配的是「完整 source 字符串」（见 config-loader.ts 的
+      # extractPluginName），所以必须写 @quartz-community/xxx 全名。
+      # 原来写 reader-mode 是无效的；而 positions.right: [] 会把右侧清空 ——
+      # 文件树搬到右侧后必须去掉它，否则文件夹页右侧会没有目录。
       exclude:
-        - reader-mode
-      positions:
-        right: []
+        - "@quartz-community/reader-mode"
+        - "@quartz-community/graph"
+        - "@quartz-community/backlinks"
     tag:
       exclude:
-        - reader-mode
-      positions:
-        right: []
+        - "@quartz-community/reader-mode"
+        - "@quartz-community/graph"
+        - "@quartz-community/backlinks"
     canvas: {}
     bases: {}

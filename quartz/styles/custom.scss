@@ -304,3 +304,97 @@ article .footnotes {
   margin-top: 2rem;
 }
 
+/* ── 16. 侧边栏：左 = 大纲，右 = 文件树（Obsidian 观感）──────────────────────
+   组件位置在 quartz.config.yaml 里调：
+     @quartz-community/table-of-contents → layout.position: left  （大纲）
+     @quartz-community/explorer          → layout.position: right （目录/文件树）
+   这里只负责：层级竖线 + 移动端遮罩修正。
+   注：左右 .sidebar 在 base.scss 里本来就都是 sticky + height:100vh，无需再补。 */
+
+:root {
+  /* 侧边栏层级引导线（大纲/文件树共用；想更淡或更黑只改这一处） */
+  --obs-guide-color: color-mix(in srgb, var(--darkgray) 45%, transparent);
+}
+
+/* 左侧「大纲」：整条竖线 + 当前阅读位置高亮。
+   Quartz 的 TOC 是扁平列表（li.depth-N 靠 padding-left 缩进），
+   所以"一条整线 + 层级缩进"最稳，不会出现断线。
+   注意 box-sizing：ul 是 flex 列的子项（stretch），content-box 下 padding
+   会额外撑宽 → 出现横向滚动条。 */
+.sidebar.left .toc ul.toc-content {
+  box-sizing: border-box;
+  border-left: 1px solid var(--obs-guide-color);
+  padding-left: 0.75rem;
+  /* ul 是 flex 列子项（stretch），margin 会撑破 .toc（它的 overflow-y:hidden
+     会让 overflow-x 计算为 auto → 出横向滚动条），所以宽度要减去 margin */
+  margin-left: 0.25rem;
+  width: calc(100% - 0.25rem);
+}
+
+.sidebar.left .toc ul.toc-content > li > a {
+  opacity: 0.55;
+}
+
+.sidebar.left .toc ul.toc-content > li > a.in-view {
+  opacity: 1;
+}
+
+/* 右侧「文件树」：每一层一条连续竖线（.folder-outer 按层级嵌套，天然连续） */
+.explorer-content .folder-outer {
+  border-left: 1px solid var(--obs-guide-color);
+  margin-left: 0.5rem;
+  padding-left: 0.4rem;
+}
+
+/* 移动端：大纲收起（TOC 原本在右栏时，Quartz 有 `.sidebar.right > .toc{display:none}`） */
+@media all and ($mobile) {
+  .sidebar.left > .toc {
+    display: none;
+  }
+}
+
+/* 移动端：文件树展开时锁住背景滚动。
+   explorer 的 JS 会给 <html> 加 .mobile-no-scroll，但组件自带样式里并没有用到它，
+   这里补上（.explorer-content 自身仍可内部滚动）。
+   另：不要给 .sidebar.right 加 position:sticky —— 它会创建 stacking context，
+   导致 explorer 的全屏遮罩被页脚文字穿透（实测过）。 */
+@media all and ($mobile) {
+  html.mobile-no-scroll {
+    overflow: hidden;
+  }
+
+  /* 移动端：文件树原本在左栏（"探索"按钮在页面顶部），搬到右栏后会掉到页脚上方。
+     用 display:contents 把右栏子组件提升为 #quartz-body 的 flex 子项，再用 order 排序：
+       左栏(标题/工具栏) → 探索按钮 → 正文 → 图谱/反链 → 页脚 */
+  #quartz-body > .sidebar.left {
+    order: -2;
+  }
+
+  #quartz-body > .sidebar.right {
+    display: contents;
+  }
+
+  #quartz-body > .sidebar.right > .explorer,
+  #quartz-body > .sidebar.right > .graph,
+  #quartz-body > .sidebar.right > .backlinks {
+    align-self: stretch;
+    flex: 0 0 auto; /* 覆盖 base.scss 里 `.sidebar.right > * { flex: 1 }`（那是给横向栏用的） */
+  }
+
+  #quartz-body > .sidebar.right > .explorer {
+    order: -1;
+    margin: 0; /* 覆盖 explorer 自带的 margin-top/bottom:auto（纵向居中会跑偏） */
+  }
+
+  /* 展开时的 ☰（关闭按钮）钉到视口左上角。
+     否则它随文档流停在"标题/工具栏"下方，会正好压在文件树第一行上
+     （遮罩内容自带 padding-top 只有 4rem）。按钮 z-index 101 > 遮罩 100。 */
+  .explorer:not(.collapsed) > .mobile-explorer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    padding: 0.6rem 1rem;
+    background-color: var(--light);
+  }
+}
+
