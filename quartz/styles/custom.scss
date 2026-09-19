@@ -398,3 +398,19 @@ article .footnotes {
   }
 }
 
+/* ── 17. 正文缩进引导线（NBSP 缩进行）───────────────────────────────────────
+   由 quartz/plugins/transformers/obsidianIndent.ts 把"行首 NBSP 之后的内容"
+   包成 <span class="obs-indent-guide">，这里只负责画线：
+   · 竖线是 1px 灰色 border（真·UI 线，不是输入字符），颜色沿用侧边栏同一变量
+   · padding-left 与负 margin-left 配对：border 往左挪进 NBSP 缩进里，
+     文字位置保持原样（等于没加插件时的对齐，零位移）
+   · 上下 padding 只把 border 撑长（行内元素的竖直 padding 不占行高），
+     让连续多行接成一条整线 */
+.obs-indent-guide {
+  border-left: 1px solid var(--obs-guide-color);
+  /* 竖直 padding 只把 border 撑长；左侧 padding 与负 margin 配对（再减掉 border 的 1px），
+     让竖线往左挪进 NBSP 缩进里、而文字位置分毫不动 */
+  padding: 0.2em 0 0.2em 0.35rem;
+  margin-left: calc(-0.35rem - 1px);
+}
+
