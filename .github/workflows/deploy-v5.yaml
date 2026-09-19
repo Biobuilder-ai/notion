@@ -32,6 +32,10 @@ jobs:
       - name: Install dependencies
         run: npm ci     # 替换为 npm ci，速度更快更稳定
 
+      - name: Obsidian→Quartz 兼容性体检（只提示，不阻断部署）
+        continue-on-error: true
+        run: node scripts/obsidian-compat-lint.mjs content
+
       - name: Build Quartz
         run: npx quartz build
 
