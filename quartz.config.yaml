@@ -1,24 +1,26 @@
 # yaml-language-server: $schema=./quartz/plugins/quartz-plugins.schema.json
 configuration:
-  pageTitle: Quartz 5
+  pageTitle: 生信学习手册
   pageTitleSuffix: ""
   enableSPA: true
   enablePopovers: true
   analytics:
     provider: plausible
-  locale: en-US
+  locale: zh-CN
   baseUrl: biobuilder-ai.github.io/notion
   ignorePatterns:
     - private
     - templates
     - .obsidian
+    - TaskNotes # Obsidian 插件数据，不发布
+    - Excalidraw # Excalidraw 图源，不发布（需要图请导出 PNG）
   theme:
-    fontOrigin: googleFonts
+    fontOrigin: local # 不再联网拉 Google Fonts，字体见 quartz/styles/custom.scss
     cdnCaching: true
     typography:
-      header: Schibsted Grotesk
-      body: Source Sans Pro
-      code: IBM Plex Mono
+      header: Segoe UI
+      body: Segoe UI
+      code: Cascadia Mono
     colors:
       lightMode:
         light: "#faf8f8"
@@ -84,13 +86,16 @@ plugins:
   - source: "@quartz-community/latex"
     enabled: true
     options:
-      renderEngine: katex
+      # 与 Obsidian 同引擎（Obsidian 用 MathJax）。想更快可改回 katex。
+      renderEngine: mathjax
     order: 80
   - source: "@quartz-community/citations"
     enabled: false
     order: 85
+  # ★★★ Obsidian 兼容核心：单个换行渲染为 <br>（等价 Obsidian 默认的
+  #     「严格换行 = 关」）。必须晚于 obsidian-flavored-markdown(30)/gfm(40)。
   - source: "@quartz-community/hard-line-breaks"
-    enabled: false
+    enabled: true
     order: 90
   - source: "@quartz-community/ox-hugo"
     enabled: false
@@ -98,8 +103,17 @@ plugins:
   - source: "@quartz-community/roam"
     enabled: false
     order: 92
+  # 字体：显式使用 Obsidian 的系统字体栈（含中文回退），与 Obsidian 观感一致。
+  # 最终生效值以 quartz/styles/custom.scss 的 --bodyFont 为准（custom.scss 无 layer，
+  # 优先级高于 @layer quartz-fonts 与 @layer quartz-base）。
   - source: "@quartz-community/quartz-fonts"
     enabled: true
+    options:
+      useThemeFonts: false
+      fontOrigin: local
+      body: &obs_sans 'ui-sans-serif, -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", Roboto, "Inter", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif'
+      header: *obs_sans
+      code: 'ui-monospace, SFMono-Regular, "Cascadia Mono", "Cascadia Code", Consolas, "Roboto Mono", "DejaVu Sans Mono", Menlo, Monaco, "Source Code Pro", monospace'
   - source: "@quartz-themes/core"
     enabled: false
     options:

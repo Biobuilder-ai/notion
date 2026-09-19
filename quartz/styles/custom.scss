@@ -1,3 +1,306 @@
 @use "./variables.scss" as *;
 
-// put your custom CSS here!
+/* ============================================================================
+   Obsidian → Quartz Compatibility Layer
+   ----------------------------------------------------------------------------
+   目的：让 Quartz 渲染出来的排版尽量等于 Obsidian（阅读视图 / Live Preview）。
+
+   为什么这个文件"天然优先级最高"：
+     Quartz v5 把核心样式（theme 变量 + base.scss + 组件样式）全部包在
+     `@layer quartz-base` 里（见 quartz/plugins/emitters/componentResources.ts），
+     而本文件是 **无 layer** 输出的。CSS 规则：无 layer 的声明 > 任何 @layer。
+     所以这里写普通选择器即可覆盖，不需要 !important / 提权技巧。
+
+   层级关系（从高到低）：
+     本文件（unlayered） > @layer quartz-fonts（字体插件） > @layer quartz-base（核心）
+
+   本文件解决不了、需要改 Markdown 的三件事：
+     1. 空行后以 Tab / 4 空格开头 → 会被判成"缩进代码块"（Obsidian 阅读视图也一样）
+     2. 表格里的 [[wikilink]] / ![[图片]] 必须写成 \|
+     3. 链接指向未 publish 的笔记 → 线上断链
+   （这三条由 scripts/obsidian-compat-lint.mjs 自动体检）
+   ============================================================================ */
+
+/* ── 1. 唯一可调区：Obsidian 侧基准值 ────────────────────────────────────────
+   这些值可以在 Obsidian 里用 Ctrl+Shift+I → Console 核对，例如：
+   getComputedStyle(document.body).getPropertyValue('--file-line-width') */
+$obs-file-line-width: 700px; // Obsidian「可读行长度」默认值
+
+:root {
+  --obs-font-size: 16px; // Obsidian --font-text-size
+  --obs-line-height: 1.5; // Obsidian --line-height-normal
+  --obs-p-spacing: 1rem; // Obsidian --p-spacing
+  --obs-heading-spacing: calc(var(--obs-p-spacing) * 2.5); // Obsidian --heading-spacing
+
+  /* Obsidian 默认主题的标题阶梯（黄金比） */
+  --obs-h1-size: 1.618em;
+  --obs-h2-size: 1.462em;
+  --obs-h3-size: 1.318em;
+  --obs-h4-size: 1.188em;
+  --obs-h5-size: 1.076em;
+  --obs-h6-size: 1em;
+
+  --obs-bold-weight: 700; // Obsidian 默认 700；Quartz 默认 600
+  --obs-quote-border-width: 2px;
+  --obs-quote-padding: 1rem;
+  --obs-list-indent: 2em;
+  --obs-code-radius: 8px;
+  --obs-code-font-size: 0.875em;
+  --obs-image-radius: 4px;
+  --obs-image-margin: 1rem;
+
+  /* 引用竖线 / 分隔线 / 表格线：用 Obsidian 的语义变量，自动跟随明暗主题 */
+  --obs-border-color: var(--background-modifier-border);
+  --obs-code-bg: #f6f8fa;
+  --obs-table-header-bg: #f5f5f5;
+}
+
+:root[saved-theme="dark"] {
+  --obs-code-bg: #1b1b1f;
+  --obs-table-header-bg: #26262b;
+}
+
+/* ── 2. 字体：对齐 Obsidian 的"系统字体 + 中文回退"栈 ────────────────────────
+   Quartz 默认是 Schibsted Grotesk / Source Sans Pro / IBM Plex Mono（且无中文回退），
+   与 Obsidian 的观感差异主要来自这里。 */
+:root {
+  --bodyFont:
+    ui-sans-serif, -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", Roboto, "Inter",
+    "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", "Apple Color Emoji",
+    "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
+  --headerFont: var(--bodyFont); // Obsidian 标题不换字体
+  --titleFont: var(--bodyFont);
+  --codeFont:
+    ui-monospace, SFMono-Regular, "Cascadia Mono", "Cascadia Code", Consolas, "Roboto Mono",
+    "DejaVu Sans Mono", Menlo, Monaco, "Source Code Pro", monospace;
+}
+
+html {
+  font-size: var(--obs-font-size);
+}
+
+/* ── 3. 正文宽度 = Obsidian 的「可读行长度」──────────────────────────────────
+   桌面栅格：侧栏 320 + 正文 700 + 侧栏 320 + 2×5px gap = 1350px
+   注意 data-frame：阅读模式(full-width/minimal)必须保持原样，故只作用于 default。 */
+.page[data-frame="default"] {
+  max-width: calc(#{$obs-file-line-width} + 2 * #{$sidePanelWidth} + 10px);
+}
+
+@media all and ($desktop) {
+  .page[data-frame="default"] > #quartz-body {
+    grid-template-columns:
+      #{$sidePanelWidth} minmax(0, #{$obs-file-line-width})
+      #{$sidePanelWidth};
+  }
+}
+
+/* ── 4. 正文：字号 / 行高 / 段距 / 断行策略 ───────────────────────────────── */
+article {
+  font-size: var(--obs-font-size);
+  line-height: var(--obs-line-height);
+}
+
+article p,
+article li,
+article tbody,
+article td,
+article th {
+  line-height: var(--obs-line-height);
+  /* Quartz 默认 text-wrap: pretty 会主动避孤行 → 换行点与 Obsidian 不一致 */
+  text-wrap: wrap;
+}
+
+article p {
+  margin: var(--obs-p-spacing) 0;
+}
+
+/* ★★★ 行首缩进兼容（必须配合 @quartz-community/hard-line-breaks）★★★
+   原理：hard-line-breaks 内部是 mdast-util-newline-to-break，把 text 节点里的
+        \n / \r 整个替换成 mdast 的 break 节点（→ <br>），换行符被"消费掉"；
+        但续行行首的 Tab / 空格会**原样保留在下一个 text 节点里**。
+        HTML 默认折叠行首空白 → 缩进消失；
+        white-space: pre-wrap 让这些空白可见，tab-size 对齐 Obsidian 的 Tab 宽度。
+   注意：因为 \n 已被消费，pre-wrap 不会造成"双倍换行"。 */
+article p,
+article li {
+  white-space: pre-wrap;
+  tab-size: 4;
+  -moz-tab-size: 4;
+}
+
+/* ── 5. 标题 ───────────────────────────────────────────────────────────────── */
+article :is(h1, h2, h3, h4, h5, h6) {
+  font-family: var(--headerFont);
+  font-weight: var(--obs-bold-weight);
+  line-height: 1.3;
+  /* 下方间距交给下一块自身的 margin（与 Obsidian 的 heading margin-bottom:0 一致） */
+  margin: var(--obs-heading-spacing) 0 0 0;
+}
+
+article h1 {
+  font-size: var(--obs-h1-size);
+}
+article h2 {
+  font-size: var(--obs-h2-size);
+}
+article h3 {
+  font-size: var(--obs-h3-size);
+}
+article h4 {
+  font-size: var(--obs-h4-size);
+}
+article h5 {
+  font-size: var(--obs-h5-size);
+}
+article h6 {
+  font-size: var(--obs-h6-size);
+}
+
+/* ── 6. 加粗 / 高亮 ────────────────────────────────────────────────────────── */
+article strong,
+article b {
+  font-weight: var(--obs-bold-weight);
+}
+
+/* ── 7. 链接：Obsidian 无背景块、无外链图标、字重不变 ─────────────────────── */
+article a {
+  font-weight: inherit;
+  text-decoration: none;
+}
+
+article a.internal,
+article a.internal.tag-link {
+  background-color: transparent;
+  padding: 0;
+  border-radius: 0;
+}
+
+article a.internal:hover {
+  text-decoration: underline;
+}
+
+article a.external .external-icon {
+  display: none;
+}
+
+/* ── 8. 引用块（左侧竖线）───────────────────────────────────────────────────
+   Quartz 默认 3px 蓝色实线；Obsidian 是细的浅灰线。 */
+article blockquote {
+  margin: var(--obs-p-spacing) 0;
+  padding: 0 0 0 var(--obs-quote-padding);
+  border-left: var(--obs-quote-border-width) solid var(--obs-border-color);
+}
+
+article blockquote p {
+  margin: 0.25rem 0;
+}
+
+/* ── 9. 列表 ───────────────────────────────────────────────────────────────── */
+article ul,
+article ol {
+  padding-inline-start: var(--obs-list-indent);
+}
+
+article li + li {
+  margin-top: 0.15rem;
+}
+
+/* ── 10. 表格 ──────────────────────────────────────────────────────────────── */
+.table-container > table {
+  margin: 1rem 0;
+  padding: 0;
+}
+
+article th {
+  background-color: var(--obs-table-header-bg);
+  border-bottom: 1px solid var(--obs-border-color);
+  font-weight: var(--obs-bold-weight);
+}
+
+article td {
+  border-bottom: 1px solid var(--obs-border-color);
+}
+
+article tr {
+  border-bottom: none;
+}
+
+/* ── 11. 图片（含 ![[img|600]] 尺寸语法）────────────────────────────────────
+   Quartz 会把 ![[img|400]] 解析成 <img width="400">，与 Obsidian 一致；
+   这里只统一"外观"，不改尺寸语义。 */
+article img {
+  max-width: 100%;
+  border-radius: var(--obs-image-radius);
+  margin: var(--obs-image-margin) 0;
+  content-visibility: visible; /* Quartz 默认 auto，滚动时可能"闪" */
+}
+
+/* Quartz 对未指定尺寸的 wikilink 图片会输出 height="auto"（非法属性值），显式中和。
+   注意：绝不能写全局 img{height:auto} —— 那会覆盖 ![[img|400x300]] 的 height 属性。 */
+article img[height="auto"] {
+  height: auto;
+}
+
+/* 独占一行的图片居中；想保持 Obsidian 默认左对齐就删掉这段 */
+article p:has(> img:only-child) {
+  text-align: center;
+}
+
+/* ── 12. 代码块（对齐 Obsidian：无边框、无行号、圆角底色）────────────────── */
+article pre {
+  border: none;
+  border-radius: var(--obs-code-radius);
+  background: var(--obs-code-bg);
+  padding: 0;
+}
+
+article pre > code {
+  font-size: var(--obs-code-font-size);
+  padding: 0.75rem 1rem;
+}
+
+article pre > code > [data-line] {
+  padding: 0;
+  border-left: none;
+}
+
+article pre > code > [data-line]::before {
+  content: none; /* 关掉 Quartz 默认行号 */
+  counter-increment: none;
+}
+
+article :not(pre) > code {
+  font-size: 0.875em;
+  padding: 0.1rem 0.3rem;
+  border-radius: 4px;
+}
+
+/* ── 13. 分隔线 ────────────────────────────────────────────────────────────── */
+article hr {
+  margin: 2rem auto;
+  height: 1px;
+  border: none;
+  background-color: var(--obs-border-color);
+}
+
+/* ── 14. Callout（Obsidian 的底色 / 描边更淡）─────────────────────────────── */
+article .callout {
+  border-radius: 4px;
+  border-color: color-mix(in srgb, var(--color) 20%, transparent);
+  background-color: color-mix(in srgb, var(--color) 8%, transparent);
+  padding: 0 1rem;
+}
+
+article .callout-title {
+  padding: 0.75rem 0;
+}
+
+article .callout-title-inner {
+  font-weight: var(--obs-bold-weight);
+}
+
+/* ── 15. 脚注 ──────────────────────────────────────────────────────────────── */
+article .footnotes {
+  margin-top: 2rem;
+}
+
