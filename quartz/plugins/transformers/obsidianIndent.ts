@@ -6,8 +6,10 @@ import { QuartzTransformerPlugin } from "../types"
 /**
  * 正文缩进引导线（对齐 Obsidian 的 indentation guide）
  * ============================================================================
- * 前提：obsidianSource.ts 已在 remark 解析前把行首缩进规范化成
- *      「NBSP × (层级 × 4)」，所以这里看到的 NBSP 个数一定是 4 的整数倍。
+ * 前提：行首缩进已经是 NBSP —— 因为 quartz-syncer 同步时会走一次 remark
+ *      round-trip，按 CommonMark 把「无意义的行首空白」（Tab / 空格）直接删掉，
+ *      只有 NBSP（\u00A0）能存活。转换由 scripts/obsidian-indent-to-nbsp.mjs 完成，
+ *      它按「层级 × 4 个 NBSP」写入，所以这里看到的个数一般是 4 的整数倍。
  *
  * Obsidian 的真实行为（用像素扫描 Obsidian 截图实测，见下方证据）：
  *   正文里「按 Tab 缩进的普通行」——**每行只有一条竖线**，位置紧贴该行文字左侧
@@ -31,7 +33,7 @@ import { QuartzTransformerPlugin } from "../types"
 /** 只有这些容器里才可能出现「用 <br> 分行的行内缩进」 */
 const CONTAINERS = new Set(["p", "li", "td", "th"])
 
-/** 一级缩进 = 4 个 NBSP（与 obsidianSource.ts 的 INDENT_UNIT 保持一致） */
+/** 一级缩进 = 4 个 NBSP（与 scripts/obsidian-indent-to-nbsp.mjs 的 UNIT 一致） */
 const INDENT_UNIT = 4
 
 type Line = ElementContent[]
