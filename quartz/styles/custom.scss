@@ -383,7 +383,14 @@ article .footnotes {
 
 .sidebar.left .toc ul.toc-content {
   box-sizing: border-box;
-  padding-left: 0.5rem;
+  /* 根级竖线：Obsidian 大纲最左侧还有一条贯穿整栏的线（实测 x=50，
+     depth-0 文字在 x≈65）。挂在 ul 上比逐行画更连续。
+     padding-left 必须是 0.75rem：li 的背景渐变从自身 padding box 起算，
+     第一条线在 li 左 + (step - offset) = 24 - 12 = 12px 处，
+     而 li 左 = ul 左 + border(1) + padding-left，
+     所以 padding-left = 12px 时「根线 → 一级线」正好等于步长 24px，网格均匀。 */
+  border-left: 1px solid var(--obs-guide-color);
+  padding-left: 0.75rem;
   margin-left: 0;
   width: 100%;
 }
