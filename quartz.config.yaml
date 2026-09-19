@@ -72,6 +72,10 @@ plugins:
   - source: "@quartz-community/table-of-contents"
     enabled: true
     order: 50
+    options:
+      # Obsidian 的大纲面板包含 h1~h6；Quartz 默认只到 h3，
+      # 会让「DNA序列与可及性信息」这类 h4 从大纲里消失。
+      maxDepth: 6
     layout:
       position: left # ★ 大纲移到左侧（Obsidian Outline 面板观感）
       priority: 40

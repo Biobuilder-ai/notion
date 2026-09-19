@@ -201,8 +201,52 @@ article ol {
   padding-inline-start: var(--obs-list-indent);
 }
 
+/* Obsidian 的「列表缩进引导线」：每一层列表在它左侧画一条连续竖线。
+   实测 Obsidian（Pasted image 20260919165055）：顶格列表的线在正文左边界 +2px，
+   条目文字在 +20px 处；嵌套列表由内层 <ul>/<ol> 各自再画一条 → 天然逐级右移。
+   用 ::before 绝对定位：不占布局、不影响任何现有缩进与对齐。 */
+article ul,
+article ol {
+  position: relative;
+}
+
+article ul::before,
+article ol::before {
+  content: "";
+  position: absolute;
+  top: 0.15em;
+  bottom: 0.15em;
+  left: 0.125rem;
+  width: 1px;
+  background-color: var(--obs-guide-color);
+  pointer-events: none;
+}
+
+/* 脚注、目录型列表不画线（Obsidian 里它们也不是正文列表） */
+article .footnotes ul::before,
+article .footnotes ol::before {
+  content: none;
+}
+
+/* ★★★ 松散列表（loose list）兼容 ★★★
+   源文里列表项之间有空行 → CommonMark 判定为 loose list，把每项内容包成 <li><p>。
+   而 article p 的 margin 是 1rem 0，于是：
+     · <p> 的 margin-top 把文字整体往下推 16px，但 list marker（"1."）仍贴在 li 顶部
+       → 序号和文字"不在同一行"，序号孤零零悬在上方；
+     · 相邻两项之间 margin-bottom + margin-top 叠加 → 出现大片空白。
+   Obsidian 的 reading view 里 li>p 没有外边距，间距由 li 自己控制，所以紧凑。
+   这里把 <p> 的外边距归零、改由 li 提供间距，即可对齐 Obsidian。 */
+article li > p {
+  margin: 0;
+}
+
 article li + li {
   margin-top: 0.15rem;
+}
+
+/* 松散列表（每项都被包进 <p>）的项间距 —— Obsidian 实测约 34px 行距 */
+article li:has(> p) + li:has(> p) {
+  margin-top: 0.4rem;
 }
 
 /* ── 10. 表格 ──────────────────────────────────────────────────────────────── */
@@ -316,23 +360,73 @@ article .footnotes {
   --obs-guide-color: color-mix(in srgb, var(--darkgray) 45%, transparent);
 }
 
-/* 左侧「大纲」：整条竖线 + 当前阅读位置高亮。
-   Quartz 的 TOC 是扁平列表（li.depth-N 靠 padding-left 缩进），
-   所以"一条整线 + 层级缩进"最稳，不会出现断线。
+/* 左侧「大纲」—— 复刻 Obsidian Outline 的「每一级一条连续竖线」
+   ─────────────────────────────────────────────────────────────────────────
+   Quartz 的 TOC 是**扁平**列表：ul.toc-content > li.depth-N（靠 padding-left
+   缩进），没有真正的嵌套 <ul>，所以不能像文件树那样用嵌套容器的 border-left。
+
+   解法：把「层级」写成数字变量 --d，然后用一条 repeating-linear-gradient
+   在 li 的 padding 区里画出 d 条 1px 竖线（background-size 宽度 = d × 步长，
+   所以正好 d 条，不多不少）。
+   相邻行同一级的线段 x 坐标相同 → 视觉上连成一条整线，
+   而父级结束后（下一行 --d 变小）该级的线自然停止 —— 与 Obsidian 一致。
+
    注意 box-sizing：ul 是 flex 列的子项（stretch），content-box 下 padding
    会额外撑宽 → 出现横向滚动条。 */
-.sidebar.left .toc ul.toc-content {
-  box-sizing: border-box;
-  border-left: 1px solid var(--obs-guide-color);
-  padding-left: 0.75rem;
-  /* ul 是 flex 列子项（stretch），margin 会撑破 .toc（它的 overflow-y:hidden
-     会让 overflow-x 计算为 auto → 出横向滚动条），所以宽度要减去 margin */
-  margin-left: 0.25rem;
-  width: calc(100% - 0.25rem);
+.sidebar.left .toc {
+  /* 一级缩进步长。Obsidian 大纲面板实测 = 25px（竖线分别在 x=50 / 75 / 100），
+     这里取 1.5rem = 24px 贴近它（TOC 组件自带的 1rem 太挤，层级感不明显）。 */
+  --toc-step: 1.5rem;
+  /* 竖线放在「该级文字左边界往左 12px」处 —— Obsidian 实测线在文字左约 12~20px */
+  --toc-guide-offset: 12px;
 }
 
+.sidebar.left .toc ul.toc-content {
+  box-sizing: border-box;
+  padding-left: 0.5rem;
+  margin-left: 0;
+  width: 100%;
+}
+
+/* --d 由 depth-N 类驱动（0~6 覆盖 h1~h6） */
+.sidebar.left .toc ul.toc-content > li {
+  --d: 0;
+}
+
+@for $i from 0 through 6 {
+  .sidebar.left .toc ul.toc-content > li.depth-#{$i} {
+    --d: #{$i};
+  }
+}
+
+.sidebar.left .toc ul.toc-content > li {
+  /* 缩进自己接管（覆盖 TOC 组件的 padding-left: calc(1rem * N)），
+     这样「缩进步长」和「竖线位置」由同一个变量控制，永远对齐网格 */
+  padding-left: calc(var(--d) * var(--toc-step));
+  background-image: repeating-linear-gradient(
+    to right,
+    transparent 0 calc(var(--toc-step) - var(--toc-guide-offset) - 1px),
+    var(--obs-guide-color) calc(var(--toc-step) - var(--toc-guide-offset) - 1px) calc(
+      var(--toc-step) - var(--toc-guide-offset)
+    ),
+    transparent calc(var(--toc-step) - var(--toc-guide-offset)) var(--toc-step)
+  );
+  /* 只画 --d 条：把绘制宽度限制成 d × 步长，超出部分不重复 */
+  background-size: calc(var(--d) * var(--toc-step)) 100%;
+  background-repeat: no-repeat;
+}
+
+/* 大纲条目：Obsidian 是「常规字重 + 中灰」，当前条目才变深。
+   Quartz 的 `a` 默认带 font-weight:600，这里必须显式压回 400，
+   否则整栏看起来又粗又黑（Obsidian 截图实测条目色 ≈ #8a8a8a）。 */
 .sidebar.left .toc ul.toc-content > li > a {
-  opacity: 0.55;
+  font-weight: 400;
+  color: var(--darkgray);
+  opacity: 0.65;
+}
+
+.sidebar.left .toc ul.toc-content > li > a:hover {
+  opacity: 1;
 }
 
 .sidebar.left .toc ul.toc-content > li > a.in-view {
@@ -398,19 +492,34 @@ article .footnotes {
   }
 }
 
-/* ── 17. 正文缩进引导线（NBSP 缩进行）───────────────────────────────────────
-   由 quartz/plugins/transformers/obsidianIndent.ts 把"行首 NBSP 之后的内容"
-   包成 <span class="obs-indent-guide">，这里只负责画线：
-   · 竖线是 1px 灰色 border（真·UI 线，不是输入字符），颜色沿用侧边栏同一变量
-   · padding-left 与负 margin-left 配对：border 往左挪进 NBSP 缩进里，
-     文字位置保持原样（等于没加插件时的对齐，零位移）
-   · 上下 padding 只把 border 撑长（行内元素的竖直 padding 不占行高），
-     让连续多行接成一条整线 */
+/* ── 17. 正文缩进引导线（对齐 Obsidian 的 indentation guide）─────────────────
+   由 quartz/plugins/transformers/obsidianIndent.ts 生成：整段行首 NBSP 包进
+   一个 <span class="obs-indent-guide">，这里用绝对定位的 ::after 画**一条**竖线。
+
+   为什么一行只画一条线（而不是每级一条）：
+     像素扫描 Obsidian 截图实测 —— 正文里按 Tab 缩进的普通行，Obsidian 只在
+     该行文字左侧画一条线（⇥⇥⇥Chr1… 也只有一条），「每级一条」只用于真实结构
+     （嵌套列表 / 引用 / 大纲）。旧实现按级拆成 6 条 → 就是「竖线很乱、参差不齐」。
+
+   为什么用 ::after 而不是 border-right：
+     border-right 会把线顶在文字脸上（0 间距）；::after 绝对定位不占布局，
+     可以精确留出 Obsidian 那样的 ~10px 间隙，且文字位置分毫不动。
+
+   padding-block 只把 span 的 padding box 撑高（行内元素的竖直 padding 不增加行高），
+   让相邻同缩进行的线段接成一条整线。 */
 .obs-indent-guide {
-  border-left: 1px solid var(--obs-guide-color);
-  /* 竖直 padding 只把 border 撑长；左侧 padding 与负 margin 配对（再减掉 border 的 1px），
-     让竖线往左挪进 NBSP 缩进里、而文字位置分毫不动 */
-  padding: 0.2em 0 0.2em 0.35rem;
-  margin-left: calc(-0.35rem - 1px);
+  position: relative;
+  padding-block: 0.2em;
+}
+
+.obs-indent-guide::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0.6em; /* ≈ Obsidian 的「线在文字左 10px」 */
+  width: 1px;
+  background-color: var(--obs-guide-color);
+  pointer-events: none;
 }
 
