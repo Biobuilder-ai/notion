@@ -24,7 +24,12 @@
 /* ── 1. 唯一可调区：Obsidian 侧基准值 ────────────────────────────────────────
    这些值可以在 Obsidian 里用 Ctrl+Shift+I → Console 核对，例如：
    getComputedStyle(document.body).getPropertyValue('--file-line-width') */
-$obs-file-line-width: 700px; // Obsidian「可读行长度」默认值
+$obs-file-line-width: 700px;
+
+/* 正文竖向引导线总开关（列表层级线 §9 + 行首缩进线 §17）。
+   false = 正文不画任何竖线；侧边栏大纲与文件树的竖线不受影响（在 §16）。
+   想恢复：改成 true 即可。 */
+$obs-body-guides: false; // Obsidian「可读行长度」默认值
 
 :root {
   --obs-font-size: 16px; // Obsidian --font-text-size
@@ -213,7 +218,7 @@ article ol {
 
 article ul::before,
 article ol::before {
-  content: "";
+  content: if($obs-body-guides, "", none); // 开关见 §1
   position: absolute;
   top: 0.15em;
   bottom: 0.15em;
@@ -521,7 +526,7 @@ article .footnotes {
 }
 
 .obs-indent-guide::after {
-  content: "";
+  content: if($obs-body-guides, "", none); // 开关见 §1
   position: absolute;
   top: 0;
   bottom: 0;
