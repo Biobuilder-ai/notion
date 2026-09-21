@@ -96,14 +96,23 @@ for (const f of files) {
       continue
     }
 
-    /* ① 缩进代码块风险：空行后以 Tab / 4 空格开头的正文 */
+    /* ① 缩进代码块风险：空行后以 Tab / 4 空格开头的正文。
+       必须先排除「列表上下文」：若最近的非空行是列表项，缩进会被列表的内容列吸收，
+       变成嵌套列表而不是代码块 —— 实测「- GC组成」渲染成 <li> 而非 <pre>，
+       旧版本在这里误报过 1 个 error。 */
     if (/^(\t| {4})/.test(line) && (i === 0 || ls[i - 1].trim() === "")) {
-      problems.push({
-        rel,
-        lineNo,
-        level: "error",
-        msg: `缩进代码块风险（空行后 Tab/4 空格开头，会被渲染成代码块）：${line.trim().slice(0, 40)}`,
-      })
+      let k = i - 1
+      while (k >= 0 && ls[k].trim() === "") k--
+      const prev = k >= 0 ? ls[k] : ""
+      const inListContext = /^\s*([-*+]|\d+[.)])\s/.test(prev)
+      if (!inListContext) {
+        problems.push({
+          rel,
+          lineNo,
+          level: "error",
+          msg: `缩进代码块风险（空行后 Tab/4 空格开头，会被渲染成代码块）：${line.trim().slice(0, 40)}`,
+        })
+      }
     }
 
     /* ② setext 标题风险：--- 紧跟非空行 */
