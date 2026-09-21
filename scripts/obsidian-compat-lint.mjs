@@ -17,7 +17,7 @@ const rootDir = path.resolve(args.find((a) => !a.startsWith("--")) ?? "content")
 const quiet = args.includes("--quiet")
 
 const problems = []
-const stats = { files: 0, images: 0, imagesNoWidth: 0, callouts: 0, wikilinks: 0 }
+const stats = { files: 0, images: 0, imagesNoWidth: 0, callouts: 0, wikilinks: 0, nbspIndent: 0 }
 
 const splitLines = (t) => t.split(/\r\n|\r|\n/)
 
@@ -136,6 +136,19 @@ for (const f of files) {
       })
     }
 
+    /* ⑧ 非结构性缩进（NBSP）：能渲染出竖线，但不进大纲、换行点两端不一致 → 提示改写 */
+    const nbspIndent = /^(\u00a0+)/.exec(line)
+    if (nbspIndent && nbspIndent[1].length >= 4) {
+      stats.nbspIndent++
+      problems.push({
+        rel,
+        lineNo,
+        level: "info",
+        msg: `非结构性缩进（${nbspIndent[1].length} 个 NBSP）：不进大纲、换行点与 Obsidian 不一致 → 建议改成嵌套列表或 #### 小标题（见 OBSIDIAN-WRITING.md）：` +
+          line.replace(/^(\u00a0+)/, "").trim().slice(0, 30),
+      })
+    }
+
     /* ⑤ 图片嵌入：统计 + 不支持的语法 */
     for (const m of line.matchAll(/!\[\[([^\]|]+)(?:\|([^\]]*))?\]\]/g)) {
       stats.images++
@@ -222,7 +235,7 @@ if (!quiet) {
 console.log(
   `\n体检目录: ${rootDir}\n` +
     `发布笔记 ${stats.files} 篇 ｜ 图片 ${stats.images}（其中 ${stats.imagesNoWidth} 张未指定宽度）` +
-    ` ｜ Callout ${stats.callouts} ｜ 双链 ${stats.wikilinks}\n` +
+    ` ｜ Callout ${stats.callouts} ｜ 双链 ${stats.wikilinks} ｜ 非结构性缩进 ${stats.nbspIndent} 行\n` +
     `结果: ${errors} error / ${warns} warn / ${infos} info\n`,
 )
 

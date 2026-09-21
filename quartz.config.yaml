@@ -65,6 +65,12 @@ plugins:
     options:
       enableInHtmlEmbed: false
       enableCheckbox: true
+      # Obsidian 的块锚点只认 6 位字母数字（^AbC123），Quartz 的实现宽松得多：
+      # 正文里任何以 ^ 开头的尾部片段都会被吃掉当成 id。实测「特征空间维度 = 4^k，
+      # 比如3-mer…」在网页上只剩「特征空间维度 = 4」——正文丢失。全库唯一的 ^ 就在这行
+      # （其余 23 处都在未发布的 Excalidraw 数据里），所以关掉它。
+      # 以后若真要用 [[笔记#^abc123]] 跳转，把这行删掉并改用 4\\^k 转义即可。
+      parseBlockReferences: false
     order: 30
   - source: "@quartz-community/github-flavored-markdown"
     enabled: true

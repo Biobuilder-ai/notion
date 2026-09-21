@@ -43,7 +43,8 @@ $obs-file-line-width: 700px; // Obsidian「可读行长度」默认值
   --obs-bold-weight: 700; // Obsidian 默认 700；Quartz 默认 600
   --obs-quote-border-width: 2px;
   --obs-quote-padding: 1rem;
-  --obs-list-indent: 2em;
+  /* Obsidian 实测（Pasted image 20260919165055）：顶格列表的引导线在正文左 +2px、      条目文字在 +20px → 每级步长 20px。旧值 2em=32px 比 Obsidian 宽，缩进看起来发虚。 */ 
+   --obs-list-indent: 1.25em;
   --obs-code-radius: 8px;
   --obs-code-font-size: 0.875em;
   --obs-image-radius: 4px;
@@ -530,3 +531,17 @@ article .footnotes {
   pointer-events: none;
 }
 
+
+/* ── 18. 隐形列表标记（路线 3：结构用列表，视觉用缩进）─────────────────────
+   语义仍然是 <ul><li>：大纲、跳转、无障碍、§9 的层级引导竖线全部保留，
+   只是把圆点变透明。
+
+   为什么用 color:transparent 而不是 list-style:none：
+     list-style:none 会让文字左移补到 marker 的位置 → 与 Obsidian 实时预览错位
+     （Obsidian 那边 - 仍然占位）。transparent 保留占位，两端文字 x 坐标一致。
+
+   只作用于无序列表：有序列表的数字是内容本身，绝不能藏。
+   想恢复圆点：把下面这条删掉即可（两端各一处，另一处在 vault 的 CSS snippet）。 */
+article ul > li::marker {
+  color: transparent;
+}
