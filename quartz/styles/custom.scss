@@ -1,4 +1,5 @@
 @use "./variables.scss" as *;
+@use "./pig.scss"; /* 迷你小猪点缀层（新增，见 pig.scss 顶部说明；不影响下方兼容层） */
 
 /* ============================================================================
    Obsidian → Quartz Compatibility Layer

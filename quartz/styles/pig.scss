@@ -1,0 +1,366 @@
+@use "./variables.scss" as *;
+
+/* ============================================================================
+   迷你小猪点缀层 v2 | Mini-Pig Accent Layer
+   ----------------------------------------------------------------------------
+   挂点地图（纯 CSS + 404 一张 img，零文案改动）：
+     1. favicon        static/icon.png            摸头猪（脸裁）
+     2. 左栏站名下      .sidebar.left .page-title  听歌猪（随节奏摇摆）
+     3. 左栏目录下面    .sidebar.left .toc         躺平猪（呼吸起伏）
+     4. 搜索空态        .result-card.no-match      读书猪（居中悬浮）
+     5. 搜索面板底纹    .search-layout::before     202459 实拍（0.18 水印）
+     6. 反链卡片        .backlinks                 骑狗猪（底部居中，放大）
+     7. 404            img.pig-404                扫地猪（扫地+灰尘）
+   动效预算：每只猪按自身姿态各演一出小戏；全部尊重 prefers-reduced-motion。
+   素材溯源：用户素材经 pig-final.mjs / pig-update.mjs 加工，来源内嵌 PNG tEXt。
+   ============================================================================ */
+
+.pig-accent {
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* ── 2. 左栏站名下：听歌猪 ─────────────────────────────────────────────────── */
+.sidebar.left .page-title::after {
+  content: "";
+  display: block;
+  width: 112px;
+  height: 86px;
+  margin: 0.35rem 0 0 0.1rem;
+  background: url("static/pigs/pig-music.png") left center / contain no-repeat;
+  transform-origin: 50% 90%;
+}
+
+/* ── 3. 左栏目录下面：躺平猪 ───────────────────────────────────────────────── */
+.sidebar.left .toc::after {
+  content: "";
+  display: block;
+  width: 110px;
+  height: 74px;
+  margin: 0.5rem 0 0 0.15rem;
+  background: url("static/pigs/pig-lie.png") left center / contain no-repeat;
+  transform-origin: 50% 95%;
+}
+
+/* ── 4. 搜索空态：读书猪（浮于画面正中；面板高度恒定，输入框不跳位） ───────── */
+.results-container {
+  height: 46vh; /* 恒定高度：结果多少都不改变对话框高度，输入框纹丝不动 */
+  overflow-y: auto;
+}
+
+.search-container .result-card.no-match {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: fit-content;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.result-card.no-match::before {
+  content: "";
+  display: block;
+  width: 136px;
+  height: 118px;
+  margin: 0 0 0.5rem;
+  background: url("static/pigs/pig-read.png") center / contain no-repeat;
+  transform-origin: 50% 90%;
+}
+
+/* ── 5. 搜索面板底纹：202459 实拍低透明度水印（input 以下整块区域） ────────── */
+.search-layout {
+  position: relative;
+}
+
+.search-layout::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: url("static/pigs/search-bg.png") center / cover no-repeat;
+  opacity: 0.18;
+  pointer-events: none;
+}
+
+.search-layout > * {
+  z-index: 1; /* 弹性子项直接提层，不设 relative——无结果卡的居中锚必须留在本区块 */
+}
+
+/* ── 6. 反链卡片中央：骑狗猪（放大；几何居中，transform 留给动画） ─────────── */
+.backlinks {
+  position: relative;
+  min-height: 300px; /* 骑狗猪的展位：保证整只露出不被截 */
+}
+
+.backlinks::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 8px;
+  margin-left: -78px;
+  width: 156px;
+  height: 138px;
+  background: url("static/pigs/pig-friends.png") center / contain no-repeat;
+  opacity: 0.95;
+  pointer-events: none;
+  transform-origin: 50% 95%;
+}
+
+.backlinks > * {
+  position: relative;
+  z-index: 1;
+}
+
+.backlinks ul.overflow {
+  max-height: 132px; /* 列表到此为止，永不压住小猪 */
+  overflow-y: auto;
+}
+
+/* ── 7. 404：扫地猪 + 扫帚边灰尘 ───────────────────────────────────────────── */
+.pig-404-wrap {
+  position: relative;
+  display: inline-block;
+}
+
+img.pig-404 {
+  display: block;
+  width: 150px;
+  margin: 0 0 0.2rem;
+  transform-origin: 50% 95%;
+}
+
+.pig-404-wrap .pig-dust {
+  position: absolute;
+  right: 2px;
+  bottom: 20%;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--gray) 55%, transparent);
+  pointer-events: none;
+}
+
+.pig-404-wrap .pig-dust:nth-child(3) {
+  right: 12px;
+  bottom: 28%;
+  width: 6px;
+  height: 6px;
+}
+
+/* ── 动效层：每只猪按姿态各演一出小戏 ─────────────────────────────────────── */
+@media (prefers-reduced-motion: no-preference) {
+  /* 听歌猪：进场弹跳登场 → 常态随节奏摇摆 */
+  .sidebar.left .page-title::after {
+    animation:
+      pig-pop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both,
+      pig-dance 1.8s 0.55s ease-in-out infinite;
+  }
+
+  /* 躺平猪：进场弹跳 → 常态呼吸 */
+  .sidebar.left .toc::after {
+    animation:
+      pig-pop 0.55s 0.12s cubic-bezier(0.34, 1.56, 0.64, 1) both,
+      pig-breathe 3.2s 0.7s ease-in-out infinite;
+  }
+
+  /* 读书猪：悬浮点头 */
+  .result-card.no-match::before {
+    animation: pig-float 2.6s ease-in-out infinite;
+  }
+
+  /* 骑狗猪：进场弹跳 → 常态上下蹦跶 */
+  .backlinks::after {
+    animation:
+      pig-pop 0.55s 0.18s cubic-bezier(0.34, 1.56, 0.64, 1) both,
+      pig-hop 1.1s 0.75s ease-in-out infinite;
+  }
+
+  /* 扫地猪：来回扫地；扫帚边灰尘升起消散 */
+  img.pig-404 {
+    animation: pig-sweep 1.3s ease-in-out infinite;
+  }
+
+  .pig-404-wrap .pig-dust {
+    animation: pig-dust 1.6s ease-out infinite;
+  }
+
+  .pig-404-wrap .pig-dust:nth-child(3) {
+    animation-delay: 0.8s;
+  }
+
+  /* 悬停加演 */
+  @media (hover: hover) {
+    .sidebar.left .page-title:hover::after {
+      animation: pig-dance-fast 0.55s ease-in-out infinite;
+    }
+
+    .sidebar.left .toc:hover::after {
+      animation: pig-roll 0.7s ease-in-out infinite;
+    }
+
+    .result-card.no-match:hover::before {
+      animation: pig-look 0.6s ease-in-out infinite;
+    }
+
+    .backlinks:hover::after {
+      animation: pig-wiggle 0.45s ease-in-out infinite;
+    }
+  }
+}
+
+/* ── 关键帧 ───────────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes pig-pop {
+    0% {
+      transform: scale(0.6) translateY(6px);
+      opacity: 0;
+    }
+    60% {
+      transform: scale(1.12) translateY(0);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(1) translateY(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes pig-dance {
+    0%,
+    100% {
+      transform: rotate(-3deg) translateY(0);
+    }
+    50% {
+      transform: rotate(3deg) translateY(-2px);
+    }
+  }
+
+  @keyframes pig-dance-fast {
+    0%,
+    100% {
+      transform: rotate(-7deg) translateY(0);
+    }
+    50% {
+      transform: rotate(7deg) translateY(-4px);
+    }
+  }
+
+  @keyframes pig-breathe {
+    0%,
+    100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.035);
+    }
+  }
+
+  @keyframes pig-roll {
+    0%,
+    100% {
+      transform: rotate(0) translateY(0);
+    }
+    30% {
+      transform: rotate(-9deg) translateY(-3px);
+    }
+    65% {
+      transform: rotate(7deg) translateY(-1px);
+    }
+  }
+
+  @keyframes pig-float {
+    0%,
+    100% {
+      transform: translateY(-3px);
+    }
+    50% {
+      transform: translateY(3px);
+    }
+  }
+
+  @keyframes pig-look {
+    0%,
+    100% {
+      transform: rotate(0);
+    }
+    40% {
+      transform: rotate(6deg);
+    }
+    70% {
+      transform: rotate(-3deg);
+    }
+  }
+
+  @keyframes pig-hop {
+    0%,
+    100% {
+      transform: translateY(0) scale(1);
+    }
+    45% {
+      transform: translateY(-5px) scale(1.02);
+    }
+  }
+
+  @keyframes pig-wiggle {
+    0%,
+    100% {
+      transform: rotate(-5deg);
+    }
+    50% {
+      transform: rotate(5deg);
+    }
+  }
+
+  @keyframes pig-sweep {
+    0%,
+    100% {
+      transform: translateX(-5px) rotate(3deg);
+    }
+    50% {
+      transform: translateX(5px) rotate(-3deg);
+    }
+  }
+
+  @keyframes pig-dust {
+    0% {
+      transform: translate(0, 0) scale(0.6);
+      opacity: 0;
+    }
+    30% {
+      opacity: 0.7;
+    }
+    100% {
+      transform: translate(6px, -14px) scale(1.1);
+      opacity: 0;
+    }
+  }
+}
+
+/* ── 移动端：骑狗猪缩小 ───────────────────────────────────────────────────── */
+@media all and ($mobile) {
+  .backlinks::after {
+    width: 128px;
+    height: 112px;
+    margin-left: -64px;
+  }
+}
+
+/* ── 无障碍：减少动效偏好下全部静止 ────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .sidebar.left .page-title::after,
+  .sidebar.left .toc::after,
+  .result-card.no-match::before,
+  .backlinks::after,
+  img.pig-404,
+  .pig-404-wrap .pig-dust {
+    animation: none;
+    transition: none;
+    transform: none;
+  }
+
+  .pig-404-wrap .pig-dust {
+    display: none;
+  }
+}

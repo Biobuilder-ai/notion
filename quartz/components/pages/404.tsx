@@ -1,4 +1,5 @@
 import { i18n } from "../../i18n"
+import { joinSegments } from "../../util/path"
 import { QuartzComponent, QuartzComponentConstructor, QuartzComponentProps } from "../types"
 
 const NotFound: QuartzComponent = ({ cfg, ctx }: QuartzComponentProps) => {
@@ -7,6 +8,15 @@ const NotFound: QuartzComponent = ({ cfg, ctx }: QuartzComponentProps) => {
 
   return (
     <article class="popover-hint">
+      <span class="pig-404-wrap">
+        <img
+          class="pig-accent pig-404"
+          src={joinSegments(baseDir, "static/pigs/pig-sweep.png")}
+          alt="拿着扫帚的小猪"
+        />
+        <span class="pig-dust"></span>
+        <span class="pig-dust"></span>
+      </span>
       <h1>404</h1>
       <p>{i18n(cfg.locale).pages.error.notFound}</p>
       <a href={baseDir}>{i18n(cfg.locale).pages.error.home}</a>
